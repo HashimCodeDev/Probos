@@ -297,7 +297,7 @@ export default function Dashboard() {
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 0.6 + index * 0.05 }}
-                  className={`p-5 rounded-2xl bg-gradient-to-br ${getColor()} border backdrop-blur-sm hover:scale-105 transition-all duration-300 cursor-pointer shadow-lg`}
+                  className={`p-5 rounded-2xl bg-linear-to-br ${getColor()} border backdrop-blur-sm hover:scale-105 transition-all duration-300 cursor-pointer shadow-lg`}
                 >
                   <div className="text-sm font-bold text-slate-300 uppercase tracking-wider mb-2">{zone}</div>
                   <div className="text-3xl font-bold text-white mb-2">{data.total}</div>
@@ -321,7 +321,7 @@ export default function Dashboard() {
           transition={{ duration: 0.5, delay: 0.7 }}
           className="glass-strong rounded-2xl border border-white/10 overflow-hidden shadow-2xl"
         >
-          <div className="px-8 py-6 border-b border-white/10 bg-gradient-to-r from-white/5 to-transparent">
+          <div className="px-8 py-6 border-b border-white/10 bg-linear-to-r from-white/5 to-transparent">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-2xl font-bold text-white tracking-tight">All Sensors</h3>
@@ -402,9 +402,9 @@ export default function Dashboard() {
                         <div className="flex items-center space-x-3">
                           <div className="flex-1 bg-slate-700/50 rounded-full h-2.5 w-24">
                             <div
-                              className={`h-2.5 rounded-full transition-all duration-500 ${latestTrust && latestTrust.score >= 0.7 ? 'bg-gradient-to-r from-emerald-500 to-green-600 shadow-lg shadow-emerald-500/50' :
-                                latestTrust && latestTrust.score >= 0.4 ? 'bg-gradient-to-r from-amber-500 to-yellow-600 shadow-lg shadow-amber-500/50' :
-                                  'bg-gradient-to-r from-red-500 to-rose-600 shadow-lg shadow-red-500/50'
+                              className={`h-2.5 rounded-full transition-all duration-500 ${latestTrust && latestTrust.score >= 0.7 ? 'bg-linear-to-r from-emerald-500 to-green-600 shadow-lg shadow-emerald-500/50' :
+                                latestTrust && latestTrust.score >= 0.4 ? 'bg-linear-to-r from-amber-500 to-yellow-600 shadow-lg shadow-amber-500/50' :
+                                  'bg-linear-to-r from-red-500 to-rose-600 shadow-lg shadow-red-500/50'
                                 }`}
                               style={{ width: `${latestTrust ? latestTrust.score * 100 : 0}%` }}
                             ></div>
