@@ -1,4 +1,4 @@
-// Prisma schema for Probos - Sensor Trust Verification Engine
+// This is your Prisma schema file
 
 generator client {
   provider = "prisma-client-js"
@@ -10,61 +10,93 @@ datasource db {
 }
 
 model Sensor {
-  id          String      @id @default(uuid())
-  sensorId    String      @unique
+  id          String   @id @default(cuid())
+  sensorId    String   @unique
   zone        String
-  type        String      // e.g., "soil_moisture", "temperature", "ec"
+  type        String
   latitude    Float?
   longitude   Float?
-  installedAt DateTime    @default(now())
+  installedAt DateTime @default(now())
+
   readings    Reading[]
   trustScores TrustScore[]
   tickets     Ticket[]
-  
+
   @@index([zone])
 }
 
 model Reading {
-  id          String   @id @default(uuid())
+  id          String   @id @default(cuid())
   sensorId    String
-  sensor      Sensor   @relation(fields: [sensorId], references: [id])
   timestamp   DateTime @default(now())
+
+  // Core sensor parameters
   moisture    Float?
   temperature Float?
-  ec          Float?   // Electrical conductivity
-  ph          Float?   // pH level
-  
+  ec          Float?
+  ph          Float?   // ← NEW: was missing from original schema
+
+  // Environmental context (used by physical plausibility check)
+  airTemp          Float?   // air temperature at time of reading
+  isRaining        Boolean  @default(false)
+  irrigationActive Boolean  @default(false)
+
+  sensor      Sensor   @relation(fields: [sensorId], references: [id])
+
   @@index([sensorId, timestamp])
 }
 
 model TrustScore {
-  id                String   @id @default(uuid())
-  sensorId          String   @unique
-  sensor            Sensor   @relation(fields: [sensorId], references: [id])
-  score             Float    @default(100.0)
-  status            String   @default("Healthy") // Healthy, Warning, Anomalous
-  lowVariance       Boolean  @default(false)
-  spikeDetected     Boolean  @default(false)
-  zoneAnomaly       Boolean  @default(false)
+  id            String   @id @default(cuid())
+  sensorId      String
+  lastEvaluated DateTime @default(now())
+
+  // ── Core score (0.0 – 1.0) ──
+  score         Float    @default(1.0)
+  status        String   @default("Healthy")   // Healthy | Warning | Anomalous
+  label         String   @default("Reliable")  // Highly Reliable | Reliable | Uncertain | Unreliable | Anomaly
+
+  // ── Per-parameter trust scores (0.0 – 1.0) ──
   paramMoisture     Float?
   paramTemperature  Float?
   paramEc           Float?
   paramPh           Float?
-  flags             String[] @default([])
-  lastEvaluated     DateTime @default(now())
-  
+
+  // ── Fault flags ──
+  lowVariance   Boolean  @default(false)   // static/frozen sensor
+  spikeDetected Boolean  @default(false)   // sudden spike
+  zoneAnomaly   Boolean  @default(false)   // isolated zone deviation
+
+  // ── Diagnostic engine outputs ──
+  rootCauses    String[] @default([])      // SPIKE | STATIC | DRIFT | ZONE_MISMATCH | etc.
+  severity      String   @default("None")  // Critical | High | Medium | Low | None
+  diagnostic    String?                    // human-readable diagnosis message
+  flags         String[] @default([])      // detailed flag messages
+
+  // ── Health trend tracking ──
+  healthTrend   String   @default("stable")   // improving | stable | degrading
+  healthSlope   Float    @default(0)           // regression slope of recent scores
+  anomalyRate   Float    @default(0)           // fraction of recent scores that were anomalous
+
+  sensor        Sensor   @relation(fields: [sensorId], references: [id])
+
   @@index([sensorId])
+  @@index([lastEvaluated])
+  @@index([status])
 }
 
 model Ticket {
-  id          String   @id @default(uuid())
-  sensorId    String
-  sensor      Sensor   @relation(fields: [sensorId], references: [id])
-  issue       String
-  severity    String   // Low, Medium, High
-  status      String   @default("Open") // Open, InProgress, Resolved
-  createdAt   DateTime @default(now())
-  resolvedAt  DateTime?
-  
+  id         String    @id @default(cuid())
+  sensorId   String
+  issue      String
+  severity   String
+  status     String    @default("Open")   // Open | InProgress | Resolved
+  createdAt  DateTime  @default(now())
+  resolvedAt DateTime?
+
+  sensor     Sensor    @relation(fields: [sensorId], references: [id])
+
   @@index([status])
+  @@index([sensorId])
+  @@index([severity])
 }
