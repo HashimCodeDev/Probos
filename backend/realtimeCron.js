@@ -206,6 +206,7 @@ async function insertRealtimeBatch() {
                     moisture: reading.soil_moisture,
                     temperature: reading.soil_temperature,
                     ec: reading.ec,
+                    ph: reading.ph,
                 }));
 
                 await prisma.reading.createMany({

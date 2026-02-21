@@ -18,6 +18,7 @@ interface Sensor {
     moisture: number | null;
     temperature: number | null;
     ec: number | null;
+    ph: number | null;
   }>;
 }
 
@@ -147,7 +148,16 @@ export default function Dashboard() {
                   Type
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Moisture
+                  Soil Moisture
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  EC
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Soil Temp
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  pH
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Trust Score
@@ -174,7 +184,22 @@ export default function Dashboard() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {latestReading?.moisture !== null && latestReading?.moisture !== undefined
-                        ? `${latestReading.moisture.toFixed(1)}%`
+                        ? `${latestReading.moisture.toFixed(2)}%`
+                        : 'N/A'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {latestReading?.ec !== null && latestReading?.ec !== undefined
+                        ? latestReading.ec.toFixed(2)
+                        : 'N/A'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {latestReading?.temperature !== null && latestReading?.temperature !== undefined
+                        ? `${latestReading.temperature.toFixed(2)}°C`
+                        : 'N/A'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {latestReading?.ph !== null && latestReading?.ph !== undefined
+                        ? latestReading.ph.toFixed(1)
                         : 'N/A'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">

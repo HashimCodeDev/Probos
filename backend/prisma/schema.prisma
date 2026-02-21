@@ -32,6 +32,7 @@ model Reading {
   moisture    Float?
   temperature Float?
   ec          Float?   // Electrical conductivity
+  ph          Float?   // pH level
   
   @@index([sensorId, timestamp])
 }
