@@ -63,8 +63,8 @@ export default function Toast({ message, type = 'success', isVisible, onClose, d
                     transition={{ duration: 0.3, ease: 'easeOut' }}
                     className="fixed top-6 right-6 z-50"
                 >
-                    <div className={`flex items-center space-x-3 px-6 py-4 bg-gradient-to-r ${config.bg} backdrop-blur-md rounded-2xl shadow-2xl ${config.shadow} border border-white/20`}>
-                        <div className="flex-shrink-0">
+                    <div className={`flex items-center space-x-3 px-6 py-4 bg-linear-to-r ${config.bg} backdrop-blur-md rounded-2xl shadow-2xl ${config.shadow} border border-white/20`}>
+                        <div className="shrink-0">
                             {config.icon}
                         </div>
                         <p className="text-white font-semibold text-sm">{message}</p>

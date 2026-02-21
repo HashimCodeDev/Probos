@@ -13,12 +13,12 @@ export default function Navigation() {
                     {/* Logo and Navigation */}
                     <div className="flex items-center space-x-8">
                         <div className="flex items-center space-x-3 group cursor-pointer">
-                            <div className="w-11 h-11 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/40 group-hover:shadow-emerald-500/60 transition-all duration-300 group-hover:scale-110">
+                            <div className="w-11 h-11 bg-linear-to-br from-emerald-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/40 group-hover:shadow-emerald-500/60 transition-all duration-300 group-hover:scale-110">
                                 <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
                             </div>
-                            <h1 className="text-2xl font-bold bg-gradient-to-r from-emerald-400 via-green-400 to-emerald-500 bg-clip-text text-transparent tracking-tight">Probos</h1>
+                            <h1 className="text-2xl font-bold bg-linear-to-r from-emerald-400 via-green-400 to-emerald-500 bg-clip-text text-transparent tracking-tight">Probos</h1>
                         </div>
 
                         {/* Navigation Pills */}

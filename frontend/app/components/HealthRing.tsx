@@ -83,7 +83,7 @@ export default function HealthRing({ percentage, total, healthy }: HealthRingPro
                             transition={{ duration: 0.5, delay: 0.5 }}
                             className="text-center"
                         >
-                            <div className="text-6xl font-bold bg-gradient-to-br from-emerald-400 via-green-400 to-emerald-500 bg-clip-text text-transparent mb-1 tracking-tight">
+                            <div className="text-6xl font-bold bg-linear-to-br from-emerald-400 via-green-400 to-emerald-500 bg-clip-text text-transparent mb-1 tracking-tight">
                                 {Math.round(animatedPercentage)}%
                             </div>
                             <div className="text-sm text-slate-400 font-bold uppercase tracking-wider">Healthy</div>
