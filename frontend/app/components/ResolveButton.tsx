@@ -201,7 +201,7 @@ export default function ResolveButton({ ticketId, status, onResolve }: ResolveBu
                             animate={{ scale: 1, y: 0 }}
                             exit={{ scale: 0.9, y: 20 }}
                             onClick={(e) => e.stopPropagation()}
-                            className="bg-slate-800 rounded-2xl p-6 max-w-md w-full border border-slate-700 shadow-2xl"
+                            className="bg-slate-800 rounded-2xl p-6 max-w-lg w-full border border-slate-700 shadow-2xl overflow-hidden"
                             role="dialog"
                             aria-labelledby="confirmation-title"
                             aria-describedby="confirmation-description"
@@ -210,13 +210,18 @@ export default function ResolveButton({ ticketId, status, onResolve }: ResolveBu
                                 <div className="shrink-0 w-12 h-12 bg-emerald-500/20 rounded-full flex items-center justify-center">
                                     <CheckIcon className="w-6 h-6 text-emerald-400" />
                                 </div>
-                                <div className="flex-1">
+                                <div className="flex-1 min-w-0 overflow-hidden">
                                     <h3 id="confirmation-title" className="text-lg font-bold text-white mb-2">
                                         Resolve Ticket?
                                     </h3>
-                                    <p id="confirmation-description" className="text-sm text-slate-300 mb-6">
-                                        Are you sure you want to mark ticket <span className="font-mono text-emerald-400">#{ticketId}</span> as resolved? This action will update the ticket status.
-                                    </p>
+                                    <div id="confirmation-description" className="text-sm text-slate-300 mb-4">
+                                        <p className="mb-2">Are you sure you want to mark this ticket as resolved?</p>
+                                        <div className="bg-slate-700/50 rounded-lg p-2 mb-2">
+                                            <p className="text-xs text-slate-400 mb-1">Ticket ID:</p>
+                                            <p className="font-mono text-emerald-400 text-xs break-all">{ticketId}</p>
+                                        </div>
+                                        <p className="text-xs text-slate-400">This action will update the ticket status.</p>
+                                    </div>
                                     <div className="flex space-x-3">
                                         <button
                                             onClick={handleResolve}
