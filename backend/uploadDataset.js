@@ -168,14 +168,8 @@ async function main() {
             console.log('⚠️  No historical files found\n');
         }
 
-        // Step 3: Upload realtime data
-        const realtimeFiles = getJsonFiles(REALTIME_PATH);
-        if (realtimeFiles.length > 0) {
-            const rtStats = await uploadSensorData(realtimeFiles, 'Realtime');
-            console.log(`✅ Realtime data uploaded: ${rtStats.sensors} sensors, ${rtStats.readings} readings\n`);
-        } else {
-            console.log('⚠️  No realtime files found\n');
-        }
+        // Step 3: Skip realtime data (disabled)
+        console.log('⏭️  Skipping realtime data upload\n');
 
         // Step 4: Verify upload
         const sensorCount = await prisma.sensor.count();

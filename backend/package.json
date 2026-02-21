@@ -8,7 +8,12 @@
     "dev": "node src/server.js",
     "prisma:migrate": "prisma migrate dev",
     "prisma:generate": "prisma generate",
-    "seed": "node seed.js"
+    "seed": "node seed.js",
+    "upload": "node uploadDataset.js",
+    "verify": "node verifyData.js",
+    "realtime": "node realtimeCron.js",
+    "realtime:continuous": "node realtimeCron.js --continuous",
+    "realtime:reset": "node realtimeCron.js --reset"
   },
   "keywords": [],
   "author": "",
