@@ -1,6 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import StatCard from '../components/StatCard';
+import StatusBadge from '../components/StatusBadge';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
@@ -48,22 +51,18 @@ export default function Maintenance() {
         }
     };
 
-    const getSeverityColor = (severity: string) => {
-        switch (severity) {
-            case 'High': return 'text-red-700 bg-red-100 border-red-200';
-            case 'Medium': return 'text-amber-700 bg-amber-100 border-amber-200';
-            case 'Low': return 'text-blue-700 bg-blue-100 border-blue-200';
-            default: return 'text-slate-700 bg-slate-100 border-slate-200';
-        }
-    };
+    const getSeverityBadge = (severity: string) => {
+        const config = {
+            High: { bg: 'bg-red-500/10', border: 'border-red-500/30', text: 'text-red-400', glow: 'shadow-red-500/50' },
+            Medium: { bg: 'bg-amber-500/10', border: 'border-amber-500/30', text: 'text-amber-400', glow: 'shadow-amber-500/50' },
+            Low: { bg: 'bg-blue-500/10', border: 'border-blue-500/30', text: 'text-blue-400', glow: 'shadow-blue-500/50' }
+        }[severity] || { bg: 'bg-slate-500/10', border: 'border-slate-500/30', text: 'text-slate-400', glow: '' };
 
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case 'Open': return 'text-red-700 bg-red-100 border-red-200';
-            case 'InProgress': return 'text-amber-700 bg-amber-100 border-amber-200';
-            case 'Resolved': return 'text-emerald-700 bg-emerald-100 border-emerald-200';
-            default: return 'text-slate-700 bg-slate-100 border-slate-200';
-        }
+        return (
+            <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold border backdrop-blur-sm ${config.bg} ${config.border} ${config.text} shadow-lg ${config.glow}`}>
+                {severity}
+            </span>
+        );
     };
 
     const getSeverityIcon = (severity: string) => {
@@ -97,20 +96,37 @@ export default function Maintenance() {
 
     if (loading) {
         return (
-            <div className="flex flex-col items-center justify-center h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-                <div className="relative">
-                    <div className="w-20 h-20 border-4 border-amber-200 border-t-amber-600 rounded-full animate-spin"></div>
+            <div className="flex flex-col items-center justify-center h-screen">
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="relative"
+                >
+                    <div className="w-20 h-20 border-4 border-amber-500/20 border-t-amber-500 rounded-full animate-spin"></div>
                     <div className="absolute inset-0 flex items-center justify-center">
-                        <svg className="w-8 h-8 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
+                        <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-yellow-600 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/30">
+                            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                        </div>
                     </div>
-                </div>
-                <p className="mt-6 text-lg font-medium text-slate-700 animate-pulse-slow">Loading tickets...</p>
+                </motion.div>
+                <motion.p
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.2 }}
+                    className="mt-6 text-lg font-medium text-slate-300"
+                >
+                    Loading tickets...
+                </motion.p>
             </div>
         );
     }
+
+    const openCount = tickets.filter(t => t.status === 'Open').length;
+    const inProgressCount = tickets.filter(t => t.status === 'InProgress').length;
+    const resolvedCount = tickets.filter(t => t.status === 'Resolved').length;
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-orange-50 to-amber-50">
@@ -319,8 +335,8 @@ export default function Maintenance() {
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold border ${getStatusColor(ticket.status)}`}>
                                                     <span className={`w-2 h-2 mr-2 rounded-full ${ticket.status === 'Resolved' ? 'bg-emerald-500' :
-                                                            ticket.status === 'InProgress' ? 'bg-amber-500 animate-pulse' :
-                                                                'bg-red-500 animate-pulse'
+                                                        ticket.status === 'InProgress' ? 'bg-amber-500 animate-pulse' :
+                                                            'bg-red-500 animate-pulse'
                                                         }`}></span>
                                                     {ticket.status === 'InProgress' ? 'In Progress' : ticket.status}
                                                 </span>
