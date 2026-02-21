@@ -25,9 +25,13 @@ export async function registerSensor(data) {
         // Initialize trust score for the new sensor
         await prisma.trustScore.create({
             data: {
-                sensorId: sensor.id,
-                score: 100.0,
-                status: 'Healthy',
+                sensorId:    sensor.id,
+                score:       1.0,               // ← changed: was 100.0, now 0–1 scale
+                status:      'Healthy',
+                label:       'Highly Reliable', // ← new
+                severity:    'None',            // ← new
+                diagnostic:  'Sensor newly registered — awaiting first evaluation.', // ← new
+                healthTrend: 'stable',          // ← new
             },
         });
 
@@ -45,6 +49,25 @@ export async function getAllSensors() {
                 trustScores: {
                     orderBy: { lastEvaluated: 'desc' },
                     take: 1,
+                    select: {
+                        id:               true,
+                        score:            true,
+                        status:           true,
+                        label:            true,        // ← new
+                        severity:         true,        // ← new
+                        diagnostic:       true,        // ← new
+                        rootCauses:       true,        // ← new
+                        paramMoisture:    true,        // ← new
+                        paramTemperature: true,        // ← new
+                        paramEc:          true,        // ← new
+                        paramPh:          true,        // ← new
+                        lowVariance:      true,
+                        spikeDetected:    true,
+                        zoneAnomaly:      true,
+                        healthTrend:      true,        // ← new
+                        anomalyRate:      true,        // ← new
+                        lastEvaluated:    true,
+                    },
                 },
                 readings: {
                     orderBy: { timestamp: 'desc' },
@@ -68,6 +91,27 @@ export async function getSensorById(id) {
                 trustScores: {
                     orderBy: { lastEvaluated: 'desc' },
                     take: 1,
+                    select: {
+                        id:               true,
+                        score:            true,
+                        status:           true,
+                        label:            true,        // ← new
+                        severity:         true,        // ← new
+                        diagnostic:       true,        // ← new
+                        rootCauses:       true,        // ← new
+                        paramMoisture:    true,        // ← new
+                        paramTemperature: true,        // ← new
+                        paramEc:          true,        // ← new
+                        paramPh:          true,        // ← new
+                        lowVariance:      true,
+                        spikeDetected:    true,
+                        zoneAnomaly:      true,
+                        flags:            true,        // ← new
+                        healthTrend:      true,        // ← new
+                        healthSlope:      true,        // ← new
+                        anomalyRate:      true,        // ← new
+                        lastEvaluated:    true,
+                    },
                 },
                 readings: {
                     orderBy: { timestamp: 'desc' },
