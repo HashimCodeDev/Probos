@@ -1,7 +1,5 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '../utils/prisma.js';
 import { createMaintenanceTicket } from './maintenance.js';
-
-const prisma = new PrismaClient();
 
 /**
  * ═══════════════════════════════════════════════════════════════

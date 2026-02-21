@@ -1,16 +1,21 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '../utils/prisma.js';
+import cache from '../utils/cache.js';
 import { getTrustScoreDistribution } from './trustEngine.js';
 import { getTicketStats } from './maintenance.js';
-
-const prisma = new PrismaClient();
 
 /**
  * Dashboard Summary Module
  * Provides aggregated data for dashboard visualization
  */
 
-// Get comprehensive dashboard summary
+// Get comprehensive dashboard summary (with caching)
 export async function getDashboardSummary() {
+    const cacheKey = 'dashboard:summary';
+
+    // Try to get from cache first
+    const cached = cache.get(cacheKey);
+    if (cached) return cached;
+
     try {
         const [
             totalSensors,
@@ -22,82 +27,69 @@ export async function getDashboardSummary() {
             getTicketStats(),
         ]);
 
-        return {
+        const result = {
             sensors: {
-                total:     totalSensors,
-                healthy:   trustDistribution.healthy,
-                warning:   trustDistribution.warning,
+                total: totalSensors,
+                healthy: trustDistribution.healthy,
+                warning: trustDistribution.warning,
                 anomalous: trustDistribution.anomalous,
-                offline:   trustDistribution.offline,        // ← new
+                offline: trustDistribution.offline,        // ← new
                 bySeverity: trustDistribution.bySeverity,   // ← new: { Critical, High, Medium, Low, None }
             },
             tickets: ticketStats,
         };
+
+        // Cache for 30 seconds
+        cache.set(cacheKey, result, 30);
+
+        return result;
     } catch (error) {
         throw new Error(`Failed to get dashboard summary: ${error.message}`);
     }
 }
 
-// Get zone-wise statistics
+// Get zone-wise statistics (with caching and optimized aggregations)
 export async function getZoneStatistics() {
+    const cacheKey = 'dashboard:zones';
+
+    // Try to get from cache first
+    const cached = cache.get(cacheKey);
+    if (cached) return cached;
+
     try {
-        const sensors = await prisma.sensor.findMany({
-            include: {
-                trustScores: {
-                    orderBy: { lastEvaluated: 'desc' },
-                    take: 1,
-                    select: {
-                        status:      true,
-                        severity:    true,   // ← new
-                        rootCauses:  true,   // ← new
-                        healthTrend: true,   // ← new
-                        score:       true,   // ← new
-                    },
-                },
-            },
-        });
+        // Use raw SQL for efficient aggregation instead of N+1 queries
+        const zoneStats = await prisma.$queryRaw`
+            SELECT 
+                s.zone,
+                COUNT(s.id)::int as total,
+                COUNT(CASE WHEN ts.status = 'Healthy' THEN 1 END)::int as healthy,
+                COUNT(CASE WHEN ts.status = 'Warning' THEN 1 END)::int as warning,
+                COUNT(CASE WHEN ts.status = 'Anomalous' THEN 1 END)::int as anomalous,
+                COUNT(CASE WHEN 'SENSOR_OFFLINE' = ANY(ts."rootCauses") THEN 1 END)::int as offline,
+                COUNT(CASE WHEN ts."healthTrend" = 'degrading' THEN 1 END)::int as degrading,
+                COALESCE(AVG(ts.score), 0)::float as "avgScore"
+            FROM "Sensor" s
+            LEFT JOIN LATERAL (
+                SELECT status, "rootCauses", "healthTrend", score
+                FROM "TrustScore" t
+                WHERE t."sensorId" = s.id
+                ORDER BY t."lastEvaluated" DESC
+                LIMIT 1
+            ) ts ON true
+            GROUP BY s.zone
+            ORDER BY s.zone
+        `;
 
-        // Group by zone
-        const zoneMap = new Map();
+        // Format avgScore to 3 decimal places
+        const result = zoneStats.map(z => ({
+            ...z,
+            avgScore: parseFloat(z.avgScore.toFixed(3))
+        }));
 
-        sensors.forEach(sensor => {
-            if (!zoneMap.has(sensor.zone)) {
-                zoneMap.set(sensor.zone, {
-                    zone:      sensor.zone,
-                    total:     0,
-                    healthy:   0,
-                    warning:   0,
-                    anomalous: 0,
-                    offline:   0,           // ← new
-                    avgScore:  0,           // ← new
-                    degrading: 0,           // ← new: sensors with degrading trend
-                    _scoreSum: 0,           // internal, removed before return
-                });
-            }
+        // Cache for 30 seconds
+        cache.set(cacheKey, result, 30);
 
-            const zoneData = zoneMap.get(sensor.zone);
-            zoneData.total++;
-
-            if (sensor.trustScores.length > 0) {
-                const ts = sensor.trustScores[0];
-
-                if      (ts.status === 'Healthy')   zoneData.healthy++;
-                else if (ts.status === 'Warning')   zoneData.warning++;
-                else if (ts.status === 'Anomalous') zoneData.anomalous++;
-
-                // ← new
-                if (ts.rootCauses?.includes('SENSOR_OFFLINE')) zoneData.offline++;
-                if (ts.healthTrend === 'degrading')            zoneData.degrading++;
-                if (ts.score != null)                          zoneData._scoreSum += ts.score;
-            }
-        });
-
-        // ← new: compute avgScore, remove internal _scoreSum
-        return Array.from(zoneMap.values()).map(z => {
-            const avgScore = z.total > 0 ? parseFloat((z._scoreSum / z.total).toFixed(3)) : 0;
-            const { _scoreSum, ...rest } = z;
-            return { ...rest, avgScore };
-        });
+        return result;
     } catch (error) {
         throw new Error(`Failed to get zone statistics: ${error.message}`);
     }
@@ -108,7 +100,7 @@ export async function getRecentActivity(limit = 10) {
     try {
         const [recentReadings, recentTickets] = await Promise.all([
             prisma.reading.findMany({
-                take:    limit,
+                take: limit,
                 orderBy: { timestamp: 'desc' },
                 include: {
                     sensor: {
@@ -117,7 +109,7 @@ export async function getRecentActivity(limit = 10) {
                 },
             }),
             prisma.ticket.findMany({
-                take:    limit,
+                take: limit,
                 orderBy: { createdAt: 'desc' },
                 include: {
                     sensor: {

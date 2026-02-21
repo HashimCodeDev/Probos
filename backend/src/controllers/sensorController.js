@@ -1,8 +1,6 @@
 import { registerSensor, getAllSensors, getSensorById } from '../modules/sensorRegistry.js';
 import { getTrustHistory } from '../modules/trustEngine.js';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from '../utils/prisma.js';
 
 /**
  * Register a new sensor

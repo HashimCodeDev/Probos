@@ -1,7 +1,7 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '../utils/prisma.js';
+import cache from '../utils/cache.js';
 import { evaluateTrustScore } from './trustEngine.js';
-
-const prisma = new PrismaClient();
+import { broadcastNewReading, broadcastDashboardUpdate } from '../utils/websocket.js';
 
 /**
  * Data Ingestion Module
@@ -34,13 +34,13 @@ export async function ingestReading(data) {
         // Create the reading
         const reading = await prisma.reading.create({
             data: {
-                sensorId:        sensor.id,
+                sensorId: sensor.id,
                 moisture,
                 temperature,
                 ec,
                 ph,               // ← new
                 airTemp,          // ← new
-                isRaining:        isRaining        ?? false, // ← new
+                isRaining: isRaining ?? false, // ← new
                 irrigationActive: irrigationActive ?? false, // ← new
             },
         });
@@ -48,26 +48,35 @@ export async function ingestReading(data) {
         // Trigger trust score evaluation and return result alongside reading
         const trustScore = await evaluateTrustScore(sensor.id); // ← now captured
 
-        return { reading, trustScore }; // ← new: was just returning reading
+        // Invalidate dashboard caches when new data comes in
+        cache.invalidatePattern('dashboard');
+
+        // Broadcast new reading via WebSocket
+        const result = { reading, trustScore };
+        broadcastNewReading(result);
+        broadcastDashboardUpdate({ type: 'reading', sensorId: sensor.sensorId });
+
+        return result; // ← new: was just returning reading
     } catch (error) {
         throw new Error(`Failed to ingest reading: ${error.message}`);
     }
 }
 
-// Batch ingest multiple readings
+// Batch ingest multiple readings (optimized for parallel processing)
 export async function ingestBatchReadings(readings) {
-    const results = [];
+    // Process all readings in parallel instead of sequentially
+    const results = await Promise.allSettled(
+        readings.map(reading => ingestReading(reading))
+    );
 
-    for (const reading of readings) {
-        try {
-            const result = await ingestReading(reading);
-            results.push({ success: true, data: result });
-        } catch (error) {
-            results.push({ success: false, error: error.message });
+    // Map results to consistent format
+    return results.map((result, index) => {
+        if (result.status === 'fulfilled') {
+            return { success: true, data: result.value };
+        } else {
+            return { success: false, error: result.reason?.message || 'Unknown error' };
         }
-    }
-
-    return results;
+    });
 }
 
 // Get recent readings for a sensor

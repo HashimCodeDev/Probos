@@ -44,6 +44,7 @@ model Reading {
   sensor      Sensor   @relation(fields: [sensorId], references: [id])
 
   @@index([sensorId, timestamp])
+  @@index([timestamp(sort: Desc)])  // For recent readings across all sensors
 }
 
 model TrustScore {
@@ -83,6 +84,9 @@ model TrustScore {
   @@index([sensorId])
   @@index([lastEvaluated])
   @@index([status])
+  @@index([sensorId, lastEvaluated(sort: Desc)])  // Composite for latest trust score queries
+  @@index([status, severity])                      // Composite for dashboard aggregations
+  @@index([severity, lastEvaluated(sort: Desc)])  // For severity-based sorting
 }
 
 model Ticket {
@@ -99,4 +103,7 @@ model Ticket {
   @@index([status])
   @@index([sensorId])
   @@index([severity])
+  @@index([status, createdAt(sort: Desc)])  // For status-filtered ticket lists
+  @@index([sensorId, status])               // For sensor-specific tickets by status
+  @@index([severity, createdAt(sort: Desc)]) // For severity-based prioritization
 }

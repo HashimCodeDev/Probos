@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import express from 'express';
+import { createServer } from 'http';
 import cors from 'cors';
 import sensorRoutes from './routes/sensorRoutes.js';
 import readingRoutes from './routes/readingRoutes.js';
@@ -8,6 +9,7 @@ import dashboardRoutes from './routes/dashboardRoutes.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import { authenticate } from './middleware/auth.js';
 import { validateEnv } from './utils/env.js';
+import { initializeWebSocket } from './utils/websocket.js';
 
 // Validate environment variables at startup
 validateEnv();
@@ -49,9 +51,16 @@ app.use(notFoundHandler);
 // Error handling middleware
 app.use(errorHandler);
 
+// Create HTTP server
+const server = createServer(app);
+
+// Initialize WebSocket
+initializeWebSocket(server);
+
 // Start server
-app.listen(PORT, () => {
+server.listen(PORT, () => {
     console.log(`🚀 Probos API server running on port ${PORT}`);
     console.log(`📊 Dashboard API: http://localhost:${PORT}/api/dashboard/summary`);
     console.log(`🔧 Health check: http://localhost:${PORT}/api/health`);
+    console.log(`🔌 WebSocket server initialized`);
 });

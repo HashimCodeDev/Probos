@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { io, Socket } from 'socket.io-client';
 import StatCard from './components/StatCard';
 import StatusBadge from './components/StatusBadge';
 import HealthRing from './components/HealthRing';
@@ -46,11 +47,38 @@ export default function Dashboard() {
   const [sensors, setSensors] = useState<Sensor[]>([]);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  const socketRef = useRef<Socket | null>(null);
 
   useEffect(() => {
+    // Initial fetch
     fetchDashboardData();
-    const interval = setInterval(fetchDashboardData, 10000);
-    return () => clearInterval(interval);
+
+    // Initialize WebSocket connection
+    socketRef.current = io(API_URL, {
+      transports: ['websocket', 'polling'],
+    });
+
+    // Listen for dashboard updates
+    socketRef.current.on('dashboard:update', () => {
+      fetchDashboardData();
+    });
+
+    // Listen for new readings
+    socketRef.current.on('reading:new', () => {
+      fetchDashboardData();
+    });
+
+    // Listen for ticket updates
+    socketRef.current.on('ticket:update', () => {
+      fetchDashboardData();
+    });
+
+    // Cleanup on unmount
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+      }
+    };
   }, []);
 
   const fetchDashboardData = async () => {
