@@ -1,0 +1,120 @@
+import json
+import random
+from datetime import datetime, timedelta
+
+# Configuration
+NUM_FIELDS = 5
+SENSORS_PER_FIELD = 10
+HISTORICAL_DAYS = 7
+REALTIME_DAYS = 1
+HOURS_PER_DAY = 24
+
+# Anchor timestamps
+now = datetime.utcnow().replace(minute=0, second=0, microsecond=0)
+realtime_start = now - timedelta(days=REALTIME_DAYS)
+historical_start = realtime_start - timedelta(days=HISTORICAL_DAYS)
+
+def generate_sensor_data(field_id_num, is_realtime):
+    field_id = f"zone_{field_id_num}"
+    base_sm = 25.0 + (field_id_num * 2.0)
+    base_ec = 1.0 + (field_id_num * 0.1)
+    base_temp = 20.0 + (field_id_num * 0.5)
+    
+    start_time = realtime_start if is_realtime else historical_start
+    total_hours = HOURS_PER_DAY if is_realtime else (HISTORICAL_DAYS * HOURS_PER_DAY)
+    
+    field_data = {"field_id": field_id, "sensors": []}
+    
+    for sensor_offset in range(1, SENSORS_PER_FIELD + 1):
+        global_sensor_id = (field_id_num - 1) * SENSORS_PER_FIELD + sensor_offset
+        sensor_id = f"s_{global_sensor_id:02d}"
+        
+        # Start battery high for historical, lower for realtime
+        battery = random.randint(50, 80) if is_realtime else random.randint(80, 100)
+        readings = []
+        
+        for hour in range(total_hours):
+            current_time = start_time + timedelta(hours=hour)
+            diurnal_temp_shift = (hour % 24 - 12) * 0.4 
+            
+            sm = base_sm + random.uniform(-0.8, 0.8)
+            ec = base_ec + random.uniform(-0.03, 0.03)
+            temp = base_temp + diurnal_temp_shift + random.uniform(-0.5, 0.5)
+            
+            # -------------------------------------------------------------------
+            # Anomaly Injection Logic (ONLY applies to the real-time dataset)
+            # -------------------------------------------------------------------
+            if is_realtime:
+                # Field 2: Static Data
+                if field_id_num == 2 and global_sensor_id == 15:
+                    battery = 2
+                    sm, ec, temp = 27.5, 1.2, 21.0 # Frozen values for the entire 24h
+                
+                # Field 3: Erratic Data (Spikes)
+                elif field_id_num == 3 and global_sensor_id == 25:
+                    if hour in [4, 11, 18]: # Inject random impossible spikes
+                        sm = round(random.uniform(90.0, 100.0), 2)
+                        ec = round(random.uniform(6.0, 9.5), 2)
+                
+                # Field 4: Calibration Drift
+                elif field_id_num == 4 and global_sensor_id == 35:
+                    drift_step = 8.0 / 24 
+                    sm = sm - (drift_step * hour) # Continues to drift downward
+                
+                # Field 5: Cross-Sensor Inconsistency
+                elif field_id_num == 5 and global_sensor_id == 45:
+                    sm = sm - 12.0 # Statistically detached from zone baseline
+
+            reading = {
+                "timestamp": current_time.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "soil_moisture": round(sm, 2),
+                "ec": round(ec, 2),
+                "soil_temperature": round(temp, 2)
+            }
+            readings.append(reading)
+            
+            if hour > 0 and hour % 24 == 0 and battery > 5:
+                battery -= random.randint(1, 2)
+
+        field_data["sensors"].append({
+            "sensor_id": sensor_id,
+            "status": "offline" if battery <= 5 else "active",
+            "battery_level": battery,
+            "readings": readings
+        })
+        
+    return field_data
+
+def generate_weather_data():
+    weather_data = {"location": "KIREAP_Deployment_Area", "forecast": []}
+    for hour in range(HOURS_PER_DAY):
+        current_time = realtime_start + timedelta(hours=hour)
+        diurnal_temp_shift = (hour % 24 - 12) * 0.4
+        
+        # Explicitly setting rainfall to 0 to ensure Field 3 spikes are flagged as anomalous
+        weather_data["forecast"].append({
+            "timestamp": current_time.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "ambient_temp": round(22.0 + diurnal_temp_shift + random.uniform(-1.0, 1.0), 1),
+            "humidity": round(random.uniform(50.0, 60.0), 1),
+            "rainfall_mm": 0.0 
+        })
+    return weather_data
+
+# 1. Generate Historical Data (7 Days, Clean)
+for i in range(1, NUM_FIELDS + 1):
+    hist_data = generate_sensor_data(i, is_realtime=False)
+    with open(f"historical_field_{i}.json", 'w') as f:
+        json.dump(hist_data, f, indent=2)
+
+# 2. Generate Real-Time Data (1 Day, With Anomalies)
+for i in range(1, NUM_FIELDS + 1):
+    rt_data = generate_sensor_data(i, is_realtime=True)
+    with open(f"realtime_field_{i}.json", 'w') as f:
+        json.dump(rt_data, f, indent=2)
+
+# 3. Generate Real-Time Weather Data
+weather = generate_weather_data()
+with open("weather_realtime.json", 'w') as f:
+    json.dump(weather, f, indent=2)
+
+print("Successfully generated 11 JSON files (Historical, Realtime, Weather).")

@@ -1,0 +1,149 @@
+{
+  "location": "KIREAP_Deployment_Area",
+  "forecast": [
+    {
+      "timestamp": "2026-02-20T10:00:00Z",
+      "ambient_temp": 17.5,
+      "humidity": 55.2,
+      "rainfall_mm": 0.0
+    },
+    {
+      "timestamp": "2026-02-20T11:00:00Z",
+      "ambient_temp": 18.5,
+      "humidity": 59.4,
+      "rainfall_mm": 0.0
+    },
+    {
+      "timestamp": "2026-02-20T12:00:00Z",
+      "ambient_temp": 17.5,
+      "humidity": 55.3,
+      "rainfall_mm": 0.0
+    },
+    {
+      "timestamp": "2026-02-20T13:00:00Z",
+      "ambient_temp": 17.5,
+      "humidity": 56.5,
+      "rainfall_mm": 0.0
+    },
+    {
+      "timestamp": "2026-02-20T14:00:00Z",
+      "ambient_temp": 19.7,
+      "humidity": 52.0,
+      "rainfall_mm": 0.0
+    },
+    {
+      "timestamp": "2026-02-20T15:00:00Z",
+      "ambient_temp": 19.1,
+      "humidity": 51.0,
+      "rainfall_mm": 0.0
+    },
+    {
+      "timestamp": "2026-02-20T16:00:00Z",
+      "ambient_temp": 18.9,
+      "humidity": 53.6,
+      "rainfall_mm": 0.0
+    },
+    {
+      "timestamp": "2026-02-20T17:00:00Z",
+      "ambient_temp": 19.7,
+      "humidity": 52.7,
+      "rainfall_mm": 0.0
+    },
+    {
+      "timestamp": "2026-02-20T18:00:00Z",
+      "ambient_temp": 20.1,
+      "humidity": 52.1,
+      "rainfall_mm": 0.0
+    },
+    {
+      "timestamp": "2026-02-20T19:00:00Z",
+      "ambient_temp": 21.1,
+      "humidity": 55.8,
+      "rainfall_mm": 0.0
+    },
+    {
+      "timestamp": "2026-02-20T20:00:00Z",
+      "ambient_temp": 21.2,
+      "humidity": 55.5,
+      "rainfall_mm": 0.0
+    },
+    {
+      "timestamp": "2026-02-20T21:00:00Z",
+      "ambient_temp": 22.1,
+      "humidity": 57.5,
+      "rainfall_mm": 0.0
+    },
+    {
+      "timestamp": "2026-02-20T22:00:00Z",
+      "ambient_temp": 21.1,
+      "humidity": 50.8,
+      "rainfall_mm": 0.0
+    },
+    {
+      "timestamp": "2026-02-20T23:00:00Z",
+      "ambient_temp": 21.4,
+      "humidity": 52.2,
+      "rainfall_mm": 0.0
+    },
+    {
+      "timestamp": "2026-02-21T00:00:00Z",
+      "ambient_temp": 22.4,
+      "humidity": 58.3,
+      "rainfall_mm": 0.0
+    },
+    {
+      "timestamp": "2026-02-21T01:00:00Z",
+      "ambient_temp": 22.6,
+      "humidity": 55.7,
+      "rainfall_mm": 0.0
+    },
+    {
+      "timestamp": "2026-02-21T02:00:00Z",
+      "ambient_temp": 23.6,
+      "humidity": 60.0,
+      "rainfall_mm": 0.0
+    },
+    {
+      "timestamp": "2026-02-21T03:00:00Z",
+      "ambient_temp": 23.6,
+      "humidity": 56.5,
+      "rainfall_mm": 0.0
+    },
+    {
+      "timestamp": "2026-02-21T04:00:00Z",
+      "ambient_temp": 24.3,
+      "humidity": 56.2,
+      "rainfall_mm": 0.0
+    },
+    {
+      "timestamp": "2026-02-21T05:00:00Z",
+      "ambient_temp": 25.8,
+      "humidity": 54.0,
+      "rainfall_mm": 0.0
+    },
+    {
+      "timestamp": "2026-02-21T06:00:00Z",
+      "ambient_temp": 24.4,
+      "humidity": 57.6,
+      "rainfall_mm": 0.0
+    },
+    {
+      "timestamp": "2026-02-21T07:00:00Z",
+      "ambient_temp": 25.6,
+      "humidity": 58.6,
+      "rainfall_mm": 0.0
+    },
+    {
+      "timestamp": "2026-02-21T08:00:00Z",
+      "ambient_temp": 26.3,
+      "humidity": 52.2,
+      "rainfall_mm": 0.0
+    },
+    {
+      "timestamp": "2026-02-21T09:00:00Z",
+      "ambient_temp": 25.4,
+      "humidity": 58.2,
+      "rainfall_mm": 0.0
+    }
+  ]
+}
