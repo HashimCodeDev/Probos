@@ -29,14 +29,14 @@ const prisma = new PrismaClient();
 // ───────────────────────────────────────────────────────────────
 
 export const ROOT_CAUSE = {
-    NORMAL:           'NORMAL',
-    SPIKE:            'SPIKE',            // sudden jump, isolated to this sensor
-    STATIC:           'STATIC',           // frozen / stuck probe
-    DRIFT:            'DRIFT',            // slow shift over time → calibration issue
-    ZONE_MISMATCH:    'ZONE_MISMATCH',    // differs from neighbours but no spike
+    NORMAL: 'NORMAL',
+    SPIKE: 'SPIKE',            // sudden jump, isolated to this sensor
+    STATIC: 'STATIC',           // frozen / stuck probe
+    DRIFT: 'DRIFT',            // slow shift over time → calibration issue
+    ZONE_MISMATCH: 'ZONE_MISMATCH',    // differs from neighbours but no spike
     WEATHER_MISMATCH: 'WEATHER_MISMATCH', // physical context doesn't match
-    SENSOR_OFFLINE:   'SENSOR_OFFLINE',   // no recent data / null values
-    FIELD_EVENT:      'FIELD_EVENT',      // real change — all zone sensors agree
+    SENSOR_OFFLINE: 'SENSOR_OFFLINE',   // no recent data / null values
+    FIELD_EVENT: 'FIELD_EVENT',      // real change — all zone sensors agree
     IMPOSSIBLE_VALUE: 'IMPOSSIBLE_VALUE', // out of physical bounds
 };
 
@@ -46,10 +46,10 @@ export const ROOT_CAUSE = {
 
 export const SEVERITY = {
     CRITICAL: 'Critical',   // impossible values / offline
-    HIGH:     'High',       // confirmed sensor fault
-    MEDIUM:   'Medium',     // suspicious / uncertain
-    LOW:      'Low',        // monitor only
-    NONE:     'None',       // healthy
+    HIGH: 'High',       // confirmed sensor fault
+    MEDIUM: 'Medium',     // suspicious / uncertain
+    LOW: 'Low',        // monitor only
+    NONE: 'None',       // healthy
 };
 
 
@@ -58,6 +58,9 @@ export const SEVERITY = {
 // ───────────────────────────────────────────────────────────────
 
 const TRUST_CONFIG = {
+
+    // Demo mode — relaxes offline detection for historical data simulation
+    DEMO_MODE: process.env.DEMO_MODE === 'true',
 
     // Formula weights (must sum to 1.0)
     WEIGHTS: {
@@ -68,59 +71,59 @@ const TRUST_CONFIG = {
 
     // Absolute physical limits — IMPOSSIBLE_VALUE if violated
     PHYSICAL_LIMITS: {
-        moisture:    { min: 0,  max: 100 },  // % VWC
-        temperature: { min: 0,  max: 60  },  // °C
-        ec:          { min: 0,  max: 10  },  // mS/cm
-        ph:          { min: 3,  max: 10  },  // pH units
+        moisture: { min: 0, max: 100 },  // % VWC
+        temperature: { min: 0, max: 60 },  // °C
+        ec: { min: 0, max: 10 },  // mS/cm
+        ph: { min: 3, max: 10 },  // pH units
     },
 
     // Temporal thresholds — % change from rolling mean
     // Formula: change% = |new - mean| / mean × 100
     TEMPORAL_THRESHOLDS: {
-        moisture:    { normal: 25, moderate: 60  },
-        temperature: { normal: 8,  moderate: 15  },
-        ec:          { normal: 15, moderate: 30  },
-        ph:          { normal: 5,  moderate: 10  },
+        moisture: { normal: 25, moderate: 60 },
+        temperature: { normal: 8, moderate: 15 },
+        ec: { normal: 15, moderate: 30 },
+        ph: { normal: 5, moderate: 10 },
     },
 
     // Static detection — min required variation across history window
     STATIC_THRESHOLDS: {
-        moisture:    0.5,
+        moisture: 0.5,
         temperature: 0.2,
-        ec:          0.05,
-        ph:          0.05,
+        ec: 0.05,
+        ph: 0.05,
     },
 
     // Drift detection — slow trend over longer window
     // If linear regression slope exceeds this per reading → DRIFT
     DRIFT_THRESHOLDS: {
-        moisture:    0.8,   // % per reading
+        moisture: 0.8,   // % per reading
         temperature: 0.3,   // °C per reading
-        ec:          0.02,  // mS/cm per reading
-        ph:          0.05,  // pH per reading
+        ec: 0.02,  // mS/cm per reading
+        ph: 0.05,  // pH per reading
     },
 
     // Cross-sensor thresholds — % deviation from zone mean
     // Formula: deviation% = |val - zoneMean| / zoneMean × 100
     CROSS_THRESHOLDS: {
-        moisture:    { normal: 25, moderate: 50 },
-        temperature: { normal: 5,  moderate: 10 },
-        ec:          { normal: 15, moderate: 30 },
-        ph:          { normal: 3,  moderate: 6  },
+        moisture: { normal: 25, moderate: 50 },
+        temperature: { normal: 5, moderate: 10 },
+        ec: { normal: 15, moderate: 30 },
+        ph: { normal: 3, moderate: 6 },
     },
 
     // Physical plausibility penalties (start at 1.0, subtract)
     PHYSICAL_PENALTIES: {
         HIGH_MOISTURE_NO_RAIN: 0.4,
-        SOIL_AIR_TEMP_GAP:     0.3,
-        PH_JUMP:               0.3,
-        EC_SPIKE:              0.3,
+        SOIL_AIR_TEMP_GAP: 0.3,
+        PH_JUMP: 0.3,
+        EC_SPIKE: 0.3,
     },
 
     // Score lookup tables
-    TEMPORAL_SCORES:  { normal: 1.0, moderate: 0.6, extreme: 0.1, static: 0.2, drift: 0.4 },
-    CROSS_SCORES:     { normal: 1.0, moderate: 0.5, extreme: 0.1 },
-    PHYSICAL_SCORES:  { normal: 1.0, moderate: 0.65, extreme: 0.1 },
+    TEMPORAL_SCORES: { normal: 1.0, moderate: 0.6, extreme: 0.1, static: 0.2, drift: 0.4 },
+    CROSS_SCORES: { normal: 1.0, moderate: 0.5, extreme: 0.1 },
+    PHYSICAL_SCORES: { normal: 1.0, moderate: 0.65, extreme: 0.1 },
 
     // Final sensor trust interpretation bands (must be descending)
     TRUST_BANDS: {
@@ -134,9 +137,9 @@ const TRUST_CONFIG = {
     OFFLINE_THRESHOLD_MS: 15 * 60 * 1000,   // 15 minutes
 
     // Windows
-    HISTORY_WINDOW:      10,   // readings for temporal analysis
-    DRIFT_WINDOW:        20,   // readings for drift detection
-    TREND_WINDOW:        10,   // trust scores for health trend
+    HISTORY_WINDOW: 10,   // readings for temporal analysis
+    DRIFT_WINDOW: 20,   // readings for drift detection
+    TREND_WINDOW: 10,   // trust scores for health trend
 };
 
 
@@ -173,14 +176,19 @@ function checkOnlineStatus(latestTimestamp, readings) {
     if (!latestTimestamp) {
         return { online: false, cause: ROOT_CAUSE.SENSOR_OFFLINE, info: 'No timestamp on latest reading' };
     }
-    const age = Date.now() - new Date(latestTimestamp).getTime();
-    if (age > TRUST_CONFIG.OFFLINE_THRESHOLD_MS) {
-        return {
-            online: false,
-            cause:  ROOT_CAUSE.SENSOR_OFFLINE,
-            info:   `Last reading ${Math.round(age / 60000)} min ago (threshold: ${TRUST_CONFIG.OFFLINE_THRESHOLD_MS / 60000} min)`,
-        };
+
+    // In demo mode, skip timestamp-based offline detection (for historical data simulation)
+    if (!TRUST_CONFIG.DEMO_MODE) {
+        const age = Date.now() - new Date(latestTimestamp).getTime();
+        if (age > TRUST_CONFIG.OFFLINE_THRESHOLD_MS) {
+            return {
+                online: false,
+                cause: ROOT_CAUSE.SENSOR_OFFLINE,
+                info: `Last reading ${Math.round(age / 60000)} min ago (threshold: ${TRUST_CONFIG.OFFLINE_THRESHOLD_MS / 60000} min)`,
+            };
+        }
     }
+
     const nullCount = readings.filter(r =>
         r.moisture === null && r.temperature === null && r.ec === null && r.ph === null
     ).length;
@@ -200,8 +208,8 @@ function checkOnlineStatus(latestTimestamp, readings) {
 // ───────────────────────────────────────────────────────────────
 
 function computeTemporalScore(param, newVal, history, driftHistory = []) {
-    const scores  = TRUST_CONFIG.TEMPORAL_SCORES;
-    const thresh  = TRUST_CONFIG.TEMPORAL_THRESHOLDS[param];
+    const scores = TRUST_CONFIG.TEMPORAL_SCORES;
+    const thresh = TRUST_CONFIG.TEMPORAL_THRESHOLDS[param];
     const statThr = TRUST_CONFIG.STATIC_THRESHOLDS[param];
     const driftThr = TRUST_CONFIG.DRIFT_THRESHOLDS[param];
 
@@ -216,7 +224,7 @@ function computeTemporalScore(param, newVal, history, driftHistory = []) {
             score: scores.static,
             level: 'static',
             cause: ROOT_CAUSE.STATIC,
-            info:  `Range ${range.toFixed(3)} < ${statThr} — sensor appears frozen`,
+            info: `Range ${range.toFixed(3)} < ${statThr} — sensor appears frozen`,
         };
     }
 
@@ -228,7 +236,7 @@ function computeTemporalScore(param, newVal, history, driftHistory = []) {
                 score: scores.drift,
                 level: 'drift',
                 cause: ROOT_CAUSE.DRIFT,
-                info:  `Slope ${slope.toFixed(4)} per reading > ${driftThr} — possible calibration drift`,
+                info: `Slope ${slope.toFixed(4)} per reading > ${driftThr} — possible calibration drift`,
             };
         }
     }
@@ -331,21 +339,21 @@ function computePhysicalScore(reading, {
     isRaining = false,
     irrigationActive = false,   // NEW: irrigation context
 } = {}) {
-    const limits    = TRUST_CONFIG.PHYSICAL_LIMITS;
+    const limits = TRUST_CONFIG.PHYSICAL_LIMITS;
     const penalties = TRUST_CONFIG.PHYSICAL_PENALTIES;
-    const scores    = TRUST_CONFIG.PHYSICAL_SCORES;
-    const flags     = [];
-    const causes    = [];
+    const scores = TRUST_CONFIG.PHYSICAL_SCORES;
+    const flags = [];
+    const causes = [];
 
     // ── Hard violations → IMPOSSIBLE_VALUE ──
     for (const [param, { min, max }] of Object.entries(limits)) {
         const val = reading[param];
         if (val !== null && val !== undefined && (val < min || val > max)) {
             return {
-                score:  scores.extreme,
-                level:  'extreme',
+                score: scores.extreme,
+                level: 'extreme',
                 causes: [ROOT_CAUSE.IMPOSSIBLE_VALUE],
-                flags:  [`IMPOSSIBLE: ${param} = ${val} out of bounds [${min}–${max}]`],
+                flags: [`IMPOSSIBLE: ${param} = ${val} out of bounds [${min}–${max}]`],
             };
         }
     }
@@ -422,11 +430,11 @@ function computeSensorTrust(paramTrusts) {
 
 function interpretTrust(score) {
     const { HIGHLY_RELIABLE, RELIABLE, UNCERTAIN, UNRELIABLE } = TRUST_CONFIG.TRUST_BANDS;
-    if (score >= HIGHLY_RELIABLE) return { status: 'Healthy',   label: 'Highly Reliable', action: 'Safe to act on data' };
-    if (score >= RELIABLE)        return { status: 'Healthy',   label: 'Reliable',         action: 'Continue monitoring' };
-    if (score >= UNCERTAIN)       return { status: 'Warning',   label: 'Uncertain',        action: 'Verify manually' };
-    if (score >= UNRELIABLE)      return { status: 'Anomalous', label: 'Unreliable',       action: 'Investigate sensor' };
-    return                               { status: 'Anomalous', label: 'Anomaly',          action: 'Ignore reading — fault detected' };
+    if (score >= HIGHLY_RELIABLE) return { status: 'Healthy', label: 'Highly Reliable', action: 'Safe to act on data' };
+    if (score >= RELIABLE) return { status: 'Healthy', label: 'Reliable', action: 'Continue monitoring' };
+    if (score >= UNCERTAIN) return { status: 'Warning', label: 'Uncertain', action: 'Verify manually' };
+    if (score >= UNRELIABLE) return { status: 'Anomalous', label: 'Unreliable', action: 'Investigate sensor' };
+    return { status: 'Anomalous', label: 'Anomaly', action: 'Ignore reading — fault detected' };
 }
 
 
@@ -436,17 +444,17 @@ function interpretTrust(score) {
 // ───────────────────────────────────────────────────────────────
 
 function computeSeverity(sensorTrustScore, rootCauses, onlineStatus) {
-    if (!onlineStatus.online)                                   return SEVERITY.CRITICAL;
-    if (rootCauses.includes(ROOT_CAUSE.IMPOSSIBLE_VALUE))       return SEVERITY.CRITICAL;
-    if (sensorTrustScore < 0.15)                                return SEVERITY.CRITICAL;
+    if (!onlineStatus.online) return SEVERITY.CRITICAL;
+    if (rootCauses.includes(ROOT_CAUSE.IMPOSSIBLE_VALUE)) return SEVERITY.CRITICAL;
+    if (sensorTrustScore < 0.15) return SEVERITY.CRITICAL;
     if (rootCauses.includes(ROOT_CAUSE.ZONE_MISMATCH) &&
-        sensorTrustScore < 0.5)                                 return SEVERITY.HIGH;
+        sensorTrustScore < 0.5) return SEVERITY.HIGH;
     if (rootCauses.includes(ROOT_CAUSE.SPIKE) &&
-        sensorTrustScore < 0.5)                                 return SEVERITY.HIGH;
-    if (rootCauses.includes(ROOT_CAUSE.STATIC))                 return SEVERITY.HIGH;
-    if (rootCauses.includes(ROOT_CAUSE.DRIFT))                  return SEVERITY.MEDIUM;
-    if (rootCauses.includes(ROOT_CAUSE.WEATHER_MISMATCH))       return SEVERITY.MEDIUM;
-    if (sensorTrustScore < 0.65)                                return SEVERITY.LOW;
+        sensorTrustScore < 0.5) return SEVERITY.HIGH;
+    if (rootCauses.includes(ROOT_CAUSE.STATIC)) return SEVERITY.HIGH;
+    if (rootCauses.includes(ROOT_CAUSE.DRIFT)) return SEVERITY.MEDIUM;
+    if (rootCauses.includes(ROOT_CAUSE.WEATHER_MISMATCH)) return SEVERITY.MEDIUM;
+    if (sensorTrustScore < 0.65) return SEVERITY.LOW;
     return SEVERITY.NONE;
 }
 
@@ -462,12 +470,12 @@ function computeHealthTrend(recentTrustScores) {
     }
 
     const scores = recentTrustScores.map(t => t.score);
-    const slope  = linearSlope(scores);
+    const slope = linearSlope(scores);
 
     let trend;
-    if      (slope >  0.01) trend = 'improving';
+    if (slope > 0.01) trend = 'improving';
     else if (slope < -0.01) trend = 'degrading';
-    else                    trend = 'stable';
+    else trend = 'stable';
 
     // Count recent anomalies
     const recentAnomalies = recentTrustScores.filter(t => t.status === 'Anomalous').length;
@@ -475,9 +483,9 @@ function computeHealthTrend(recentTrustScores) {
 
     return {
         trend,
-        slope:        parseFloat(slope.toFixed(4)),
-        anomalyRate:  parseFloat(anomalyRate.toFixed(2)),
-        info:         `${trend} (slope: ${slope.toFixed(4)}, anomaly rate: ${(anomalyRate * 100).toFixed(0)}%)`,
+        slope: parseFloat(slope.toFixed(4)),
+        anomalyRate: parseFloat(anomalyRate.toFixed(2)),
+        info: `${trend} (slope: ${slope.toFixed(4)}, anomaly rate: ${(anomalyRate * 100).toFixed(0)}%)`,
     };
 }
 
@@ -497,7 +505,7 @@ function classifyRootCauses(paramDetails, physical, onlineStatus) {
 
     for (const d of Object.values(paramDetails)) {
         if (d.temporalCause !== ROOT_CAUSE.NORMAL) causes.add(d.temporalCause);
-        if (d.crossCause    !== ROOT_CAUSE.NORMAL) causes.add(d.crossCause);
+        if (d.crossCause !== ROOT_CAUSE.NORMAL) causes.add(d.crossCause);
     }
 
     for (const c of physical.causes) {
@@ -573,11 +581,11 @@ export async function evaluateTrustScore(sensorId) {
             include: {
                 readings: {
                     orderBy: { timestamp: 'desc' },
-                    take:    50,
+                    take: 50,
                 },
                 trustScores: {
                     orderBy: { lastEvaluated: 'desc' },
-                    take:    TRUST_CONFIG.TREND_WINDOW,   // for health trend
+                    take: TRUST_CONFIG.TREND_WINDOW,   // for health trend
                 },
             },
         });
@@ -587,39 +595,39 @@ export async function evaluateTrustScore(sensorId) {
         }
 
         const readings = sensor.readings;
-        const latest   = readings[0];
+        const latest = readings[0];
         const previous = readings[1] ?? null;
-        const history  = readings.slice(1, TRUST_CONFIG.HISTORY_WINDOW  + 1);
-        const driftWin = readings.slice(1, TRUST_CONFIG.DRIFT_WINDOW    + 1);
+        const history = readings.slice(1, TRUST_CONFIG.HISTORY_WINDOW + 1);
+        const driftWin = readings.slice(1, TRUST_CONFIG.DRIFT_WINDOW + 1);
 
         // ── Improvement 8: Offline / missing data check ──
         const onlineStatus = checkOnlineStatus(latest.timestamp, readings.slice(0, 10));
         if (!onlineStatus.online) {
             const offlineResult = await prisma.trustScore.create({
                 data: {
-                    sensorId:        sensor.id,
-                    score:           0.0,
-                    status:          'Anomalous',
-                    label:           'Sensor Offline',
-                    rootCauses:      [ROOT_CAUSE.SENSOR_OFFLINE],
-                    severity:        SEVERITY.CRITICAL,
-                    diagnostic:      onlineStatus.info,
-                    lowVariance:     false,
-                    spikeDetected:   false,
-                    zoneAnomaly:     false,
-                    paramMoisture:    0,
+                    sensorId: sensor.id,
+                    score: 0.0,
+                    status: 'Anomalous',
+                    label: 'Sensor Offline',
+                    rootCauses: [ROOT_CAUSE.SENSOR_OFFLINE],
+                    severity: SEVERITY.CRITICAL,
+                    diagnostic: onlineStatus.info,
+                    lowVariance: false,
+                    spikeDetected: false,
+                    zoneAnomaly: false,
+                    paramMoisture: 0,
                     paramTemperature: 0,
-                    paramEc:          0,
-                    paramPh:          0,
-                    flags:           [onlineStatus.info],
-                    healthTrend:     'unknown',
-                    healthSlope:     0,
-                    anomalyRate:     0,
+                    paramEc: 0,
+                    paramPh: 0,
+                    flags: [onlineStatus.info],
+                    healthTrend: 'unknown',
+                    healthSlope: 0,
+                    anomalyRate: 0,
                 },
             });
             await createMaintenanceTicket({
                 sensorId: sensor.id,
-                issue:    onlineStatus.info,
+                issue: onlineStatus.info,
                 severity: SEVERITY.CRITICAL,
             });
             return offlineResult;
@@ -640,10 +648,10 @@ export async function evaluateTrustScore(sensorId) {
         };
 
         const driftArrays = {
-            moisture:    driftWin.map(r => r.moisture).filter(v => v !== null),
+            moisture: driftWin.map(r => r.moisture).filter(v => v !== null),
             temperature: driftWin.map(r => r.temperature).filter(v => v !== null),
-            ec:          driftWin.map(r => r.ec).filter(v => v !== null),
-            ph:          driftWin.map(r => r.ph).filter(v => v !== null),
+            ec: driftWin.map(r => r.ec).filter(v => v !== null),
+            ph: driftWin.map(r => r.ph).filter(v => v !== null),
         };
 
         // ── Zone sensors (with their own histories for field event detection) ──
@@ -652,7 +660,7 @@ export async function evaluateTrustScore(sensorId) {
             include: {
                 readings: {
                     orderBy: { timestamp: 'desc' },
-                    take:    TRUST_CONFIG.HISTORY_WINDOW + 1,
+                    take: TRUST_CONFIG.HISTORY_WINDOW + 1,
                 },
             },
         });
@@ -666,23 +674,23 @@ export async function evaluateTrustScore(sensorId) {
 
         // Zone histories for field event vs fault differentiation
         const zoneHistories = {
-            moisture:    zoneSensors.map(s => s.readings.slice(1).map(r => r.moisture).filter(v => v != null)),
+            moisture: zoneSensors.map(s => s.readings.slice(1).map(r => r.moisture).filter(v => v != null)),
             temperature: zoneSensors.map(s => s.readings.slice(1).map(r => r.temperature).filter(v => v != null)),
-            ec:          zoneSensors.map(s => s.readings.slice(1).map(r => r.ec).filter(v => v != null)),
-            ph:          zoneSensors.map(s => s.readings.slice(1).map(r => r.ph).filter(v => v != null)),
+            ec: zoneSensors.map(s => s.readings.slice(1).map(r => r.ec).filter(v => v != null)),
+            ph: zoneSensors.map(s => s.readings.slice(1).map(r => r.ph).filter(v => v != null)),
         };
 
         // ── Physical check (shared) ──
         const physical = computePhysicalScore(currentReading, {
-            prevPh:           previous?.ph          ?? null,
-            prevEc:           previous?.ec          ?? null,
-            airTemp:          latest.airTemp         ?? null,
-            isRaining:        latest.isRaining       ?? false,
+            prevPh: previous?.ph ?? null,
+            prevEc: previous?.ec ?? null,
+            airTemp: latest.airTemp ?? null,
+            isRaining: latest.isRaining ?? false,
             irrigationActive: latest.irrigationActive ?? false,
         });
 
         // ── Per-parameter trust ──
-        const params       = ['moisture', 'temperature', 'ec', 'ph'];
+        const params = ['moisture', 'temperature', 'ec', 'ph'];
         const paramDetails = {};
         const paramTrusts = {};
 
@@ -702,17 +710,17 @@ export async function evaluateTrustScore(sensorId) {
             const trust = computeParamTrust(temporal.score, cross.score, physical.score);
 
             paramDetails[param] = {
-                value:         currentReading[param],
-                temporal:      temporal.score,
-                temporalInfo:  temporal.info,
+                value: currentReading[param],
+                temporal: temporal.score,
+                temporalInfo: temporal.info,
                 temporalLevel: temporal.level,
                 temporalCause: temporal.cause,
-                cross:         cross.score,
-                crossInfo:     cross.info,
-                crossLevel:    cross.level,
-                crossCause:    cross.cause,
-                physical:      physical.score,
-                paramTrust:    trust,
+                cross: cross.score,
+                crossInfo: cross.info,
+                crossLevel: cross.level,
+                crossCause: cross.cause,
+                physical: physical.score,
+                paramTrust: trust,
             };
 
             paramTrusts[param] = trust;
@@ -735,20 +743,20 @@ export async function evaluateTrustScore(sensorId) {
         const diagnostic = buildDiagnosticMessage(paramDetails, rootCauses, sensorTrustScore, healthTrend);
 
         // ── Collect flags ──
-        const allFlags     = [...physical.flags];
-        const lowVariance  = params.some(p => paramDetails[p].temporalLevel === 'static');
+        const allFlags = [...physical.flags];
+        const lowVariance = params.some(p => paramDetails[p].temporalLevel === 'static');
         const spikeDetected = params.some(p => paramDetails[p].temporalCause === ROOT_CAUSE.SPIKE);
-        const zoneAnomaly  = params.some(p => paramDetails[p].crossCause === ROOT_CAUSE.ZONE_MISMATCH);
+        const zoneAnomaly = params.some(p => paramDetails[p].crossCause === ROOT_CAUSE.ZONE_MISMATCH);
 
-        if (lowVariance)    allFlags.push('Static sensor — no variation detected');
-        if (spikeDetected)  allFlags.push('Spike detected in one or more parameters');
-        if (zoneAnomaly)    allFlags.push('Isolated zone deviation — possible sensor fault');
+        if (lowVariance) allFlags.push('Static sensor — no variation detected');
+        if (spikeDetected) allFlags.push('Spike detected in one or more parameters');
+        if (zoneAnomaly) allFlags.push('Isolated zone deviation — possible sensor fault');
 
         // ── Save to DB ──
         const trustScore = await prisma.trustScore.create({
             data: {
-                sensorId:         sensor.id,
-                score:            sensorTrustScore,
+                sensorId: sensor.id,
+                score: sensorTrustScore,
                 status,
                 label,
                 rootCauses,
@@ -757,14 +765,14 @@ export async function evaluateTrustScore(sensorId) {
                 lowVariance,
                 spikeDetected,
                 zoneAnomaly,
-                paramMoisture:    paramTrusts.moisture,
+                paramMoisture: paramTrusts.moisture,
                 paramTemperature: paramTrusts.temperature,
-                paramEc:          paramTrusts.ec,
-                paramPh:          paramTrusts.ph,
-                flags:            allFlags,
-                healthTrend:      healthTrend.trend,
-                healthSlope:      healthTrend.slope,
-                anomalyRate:      healthTrend.anomalyRate,
+                paramEc: paramTrusts.ec,
+                paramPh: paramTrusts.ph,
+                flags: allFlags,
+                healthTrend: healthTrend.trend,
+                healthSlope: healthTrend.slope,
+                anomalyRate: healthTrend.anomalyRate,
             },
         });
 
@@ -772,7 +780,7 @@ export async function evaluateTrustScore(sensorId) {
         if (status === 'Anomalous' && !rootCauses.includes(ROOT_CAUSE.FIELD_EVENT)) {
             await createMaintenanceTicket({
                 sensorId: sensor.id,
-                issue:    diagnostic,
+                issue: diagnostic,
                 severity,
             });
         }
@@ -809,18 +817,18 @@ export async function getTrustScoreDistribution() {
         });
 
         const distribution = {
-            healthy:   0,
-            warning:   0,
+            healthy: 0,
+            warning: 0,
             anomalous: 0,
-            offline:   0,
+            offline: 0,
             bySeverity: { Critical: 0, High: 0, Medium: 0, Low: 0, None: 0 },
         };
 
         sensors.forEach(sensor => {
             if (sensor.trustScores.length > 0) {
                 const ts = sensor.trustScores[0];
-                if      (ts.status === 'Healthy')   distribution.healthy++;
-                else if (ts.status === 'Warning')   distribution.warning++;
+                if (ts.status === 'Healthy') distribution.healthy++;
+                else if (ts.status === 'Warning') distribution.warning++;
                 else if (ts.status === 'Anomalous') distribution.anomalous++;
 
                 if (ts.rootCauses?.includes(ROOT_CAUSE.SENSOR_OFFLINE)) distribution.offline++;
@@ -848,25 +856,25 @@ export async function getTrustHistory(sensorId, limit = 20) {
             orderBy: { lastEvaluated: 'desc' },
             take: limit,
             select: {
-                id:               true,
-                score:            true,
-                status:           true,
-                label:            true,
-                rootCauses:       true,
-                severity:         true,
-                diagnostic:       true,
-                lowVariance:      true,
-                spikeDetected:    true,
-                zoneAnomaly:      true,
-                paramMoisture:    true,
+                id: true,
+                score: true,
+                status: true,
+                label: true,
+                rootCauses: true,
+                severity: true,
+                diagnostic: true,
+                lowVariance: true,
+                spikeDetected: true,
+                zoneAnomaly: true,
+                paramMoisture: true,
                 paramTemperature: true,
-                paramEc:          true,
-                paramPh:          true,
-                flags:            true,
-                healthTrend:      true,
-                healthSlope:      true,
-                anomalyRate:      true,
-                lastEvaluated:    true,
+                paramEc: true,
+                paramPh: true,
+                flags: true,
+                healthTrend: true,
+                healthSlope: true,
+                anomalyRate: true,
+                lastEvaluated: true,
             },
         });
         return history;
