@@ -231,3 +231,20 @@ export async function getTrustScoreDistribution() {
         throw new Error(`Failed to get trust score distribution: ${error.message}`);
     }
 }
+
+/**
+ * Get trust score history for a specific sensor
+ */
+export async function getTrustHistory(sensorId, limit = 20) {
+    try {
+        const trustScores = await prisma.trustScore.findMany({
+            where: { sensorId },
+            orderBy: { lastEvaluated: 'desc' },
+            take: limit,
+        });
+
+        return trustScores;
+    } catch (error) {
+        throw new Error(`Failed to get trust history: ${error.message}`);
+    }
+}

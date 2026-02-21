@@ -1,5 +1,5 @@
 import express from 'express';
-import { createSensor, getSensors, getSensor } from '../controllers/sensorController.js';
+import { createSensor, getSensors, getSensor, getSensorTrustHistory } from '../controllers/sensorController.js';
 
 const router = express.Router();
 
@@ -11,5 +11,8 @@ router.get('/', getSensors);
 
 // Get sensor by ID
 router.get('/:id', getSensor);
+
+// Get trust score history for a sensor
+router.get('/:id/trust-history', getSensorTrustHistory);
 
 export default router;
