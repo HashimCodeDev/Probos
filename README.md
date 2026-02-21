@@ -2,6 +2,13 @@
 
 **Sensor Trust Verification Engine for Precision Agriculture**
 
+## Quick Links
+
+- **Quick start**: `QUICK_START.md`
+- **Backend**: `backend/`
+- **Frontend dashboard**: `frontend/`
+- **License**: `LICENSE`
+
 ---
 
 ## Problem Statement
@@ -69,34 +76,26 @@ This approach prevents faulty sensors from corrupting irrigation decisions, redu
 
 **Purpose**: Core intelligence that evaluates sensor reliability.
 
-**Evaluation Criteria**:
+**What it does (v2)**: Probos uses a diagnostic, confidence-based approach instead of a fixed pass/fail rule set.
 
-#### a) **Static Detection (Low Variance)**
-- Calculates variance across the last 50 readings
-- If variance < 0.01, the sensor is likely stuck
-- **Penalty**: -15 points
-- **Reason**: Healthy sensors show natural fluctuation as soil conditions change
+**Key features**:
+- Computes **parameter-level trust** (moisture / temperature / EC / pH) to isolate which probe is faulty
+- Separates checks into:
+  - **Temporal stability** (SPIKE / STATIC / DRIFT)
+  - **Cross-sensor agreement** within a zone (ZONE_MISMATCH vs FIELD_EVENT)
+  - **Physical plausibility** (IMPOSSIBLE_VALUE / WEATHER_MISMATCH)
+- Handles **missing data / connectivity** and marks sensors **SENSOR_OFFLINE**
+- Tracks **health trend** over recent trust scores (stable / improving / degrading)
+- Produces **root cause codes**, **severity**, and a **human-readable diagnostic**
 
-#### b) **Spike Detection (Sudden Jumps)**
-- Compares current reading to previous reading
-- If percentage change > 30%, flags a spike
-- **Penalty**: -20 points
-- **Reason**: Natural changes in soil moisture are gradual; sudden jumps indicate malfunction
+**Trust scoring (high level)**:
+- Each parameter gets a trust score `T_param` in the range **0.0–1.0**
+- Final sensor trust is the average across parameters
+- Status/labels are derived from bands (Healthy / Warning / Anomalous)
 
-#### c) **Cross-Sensor Anomaly (Zone Deviation)**
-- Compares sensor reading to zone mean ± 2 standard deviations
-- If the reading falls outside this range, it's anomalous
-- **Penalty**: -25 points
-- **Reason**: Sensors in the same zone should show similar trends; outliers are suspicious
-
-**Trust Score Range**: 0-100 (clamped)
-
-**Status Thresholds**:
-- **> 80**: Healthy (green)
-- **60-80**: Warning (yellow)
-- **< 60**: Anomalous (red)
-
-**Auto-Ticket Generation**: When a sensor becomes Anomalous, a maintenance ticket is automatically created with detailed issue description.
+**Auto-ticket generation**:
+- A ticket is created when status is **Anomalous**
+- Tickets are **not** created for **FIELD_EVENT** (interpreted as a real-world change affecting the whole zone)
 
 ---
 
@@ -107,7 +106,7 @@ This approach prevents faulty sensors from corrupting irrigation decisions, redu
 **Functionality**:
 - Auto-generates tickets when sensors enter Anomalous state
 - Prevents duplicate tickets for the same sensor
-- Categorizes issues by severity (Low, Medium, High)
+- Categorizes issues by severity (Critical, High, Medium, Low)
 - Tracks ticket lifecycle: Open → InProgress → Resolved
 - Provides filtering and querying capabilities for maintenance teams
 
@@ -145,9 +144,9 @@ This approach prevents faulty sensors from corrupting irrigation decisions, redu
        ▼
 ┌─────────────────┐
 │  Trust Engine   │  (Evaluates sensor behavior)
-│  - Low variance │
-│  - Spike detect │
-│  - Zone anomaly │
+│  - Temporal     │
+│  - Cross-zone   │
+│  - Physical     │
 └──────┬──────────┘
        │
        ▼
@@ -171,9 +170,9 @@ This approach prevents faulty sensors from corrupting irrigation decisions, redu
 **Data Flow**:
 1. Sensors push readings to `/api/readings` endpoint
 2. Backend stores reading in database
-3. Trust Engine evaluates sensor using last 50 readings
-4. New trust score is calculated and stored
-5. If anomalous, maintenance ticket is generated
+3. Trust Engine evaluates the sensor using recent history + zone neighbours
+4. A confidence-based trust score (0.0–1.0), root causes, severity, and diagnostic are stored
+5. If status is Anomalous, a maintenance ticket is generated (except for `FIELD_EVENT`)
 6. Frontend polls `/api/dashboard/summary` and `/api/sensors` for updates
 7. Operators view sensor health and maintenance tasks in real-time
 
@@ -181,24 +180,56 @@ This approach prevents faulty sensors from corrupting irrigation decisions, redu
 
 ## Trust Score Logic
 
-### Initialization
-- Every sensor starts with a Trust Score of **100**
+The backend trust engine (`backend/src/modules/trustEngine.js`) computes a **confidence score** instead of applying fixed penalties.
 
-### Penalty System
-- **Low Variance**: -15 (sensor stuck)
-- **Spike Detected**: -20 (sudden anomalous jump)
-- **Zone Anomaly**: -25 (deviates from zone peers)
+### 1) Parameter trust (0.0–1.0)
 
-### Score Clamping
-- Final score is clamped between **0 and 100**
-- Multiple penalties can stack (e.g., a sensor with all three issues: 100 - 15 - 20 - 25 = 40)
+For each parameter (`moisture`, `temperature`, `ec`, `ph`):
 
-### Status Mapping
+- **Temporal score**: detects
+  - `STATIC` (frozen probe via low range across recent history)
+  - `DRIFT` (slow trend via linear regression slope)
+  - `SPIKE` (large change vs rolling mean)
+- **Cross score**: compares against zone neighbours
+  - `ZONE_MISMATCH` when this sensor deviates but neighbours are stable
+  - `FIELD_EVENT` when neighbours also changed (interpreted as real conditions)
+- **Physical score**: checks plausibility / context
+  - `IMPOSSIBLE_VALUE` for out-of-bounds values
+  - `WEATHER_MISMATCH` for context mismatches (e.g., very high moisture with no rain/irrigation)
+
+The three components are combined with weights:
 ```
-Score > 80  → Healthy    (Green)
-Score 60-80 → Warning    (Yellow)
-Score < 60  → Anomalous  (Red, auto-generates ticket)
+T_param = 0.3 * Temporal + 0.5 * Cross + 0.2 * Physical
 ```
+
+### 2) Sensor trust (0.0–1.0)
+
+The overall sensor trust is the average across parameters:
+```
+SensorTrust = (T_moisture + T_temperature + T_ec + T_ph) / 4
+```
+
+### 3) Status mapping
+
+The trust engine interprets the final score into:
+
+- **Healthy**: Highly Reliable / Reliable
+- **Warning**: Uncertain
+- **Anomalous**: Unreliable / Anomaly
+
+### 4) Offline handling
+
+If a sensor is not transmitting recent data (timestamp too old) or has too many null readings, it is marked:
+
+- `SENSOR_OFFLINE`
+- Trust score is stored as `0.0`
+- Severity is `Critical`
+
+### 5) Root causes, severity, and health trend
+
+- **Root causes** are aggregated across temporal/cross/physical checks (e.g., `SPIKE`, `STATIC`, `DRIFT`, `ZONE_MISMATCH`, `WEATHER_MISMATCH`, `IMPOSSIBLE_VALUE`, `SENSOR_OFFLINE`)
+- **Severity** is derived from root causes and trust score (Critical / High / Medium / Low / None)
+- **Health trend** is computed from recent trust history (stable / improving / degrading) to spot gradual degradation
 
 ### Re-Evaluation
 - Trust score is recalculated **on every new reading**
@@ -208,6 +239,8 @@ Score < 60  → Anomalous  (Red, auto-generates ticket)
 ---
 
 ## How to Run
+
+If you want the fastest path to a working demo, follow `QUICK_START.md`.
 
 ### Prerequisites
 - **Node.js** (v18 or higher)
@@ -229,27 +262,35 @@ Score < 60  → Anomalous  (Red, auto-generates ticket)
    ```
 
 3. **Configure database**:
-   - Edit `.env` file with your PostgreSQL connection string:
+   - Create `backend/.env` and set:
      ```
      DATABASE_URL="postgresql://username:password@localhost:5432/probos"
      ```
 
-4. **Run database migrations**:
+4. **Run migrations + generate Prisma client**:
    ```bash
    npx prisma migrate dev --name init
-   ```
-
-5. **Generate Prisma client**:
-   ```bash
    npx prisma generate
    ```
 
-6. **Start the backend server**:
+5. **Start the backend server**:
    ```bash
    npm run dev
    ```
 
    The API will run on `http://localhost:5000`
+
+### Backend Utility Scripts
+
+Run these from `backend/`:
+
+- **Seed sample data**: `npm run seed`
+- **Upload dataset (if applicable)**: `npm run upload`
+- **Verify ingested data**: `npm run verify`
+- **Demo realtime mode**: `npm run realtime`
+- **Continuous realtime demo**: `npm run realtime:continuous`
+- **Reset realtime demo state**: `npm run realtime:reset`
+- **Reset database**: `npm run db:reset`
 
 ---
 
@@ -271,6 +312,13 @@ Score < 60  → Anomalous  (Red, auto-generates ticket)
    ```
 
    The dashboard will be available at `http://localhost:3000`
+
+### Frontend Configuration
+
+If your frontend needs an explicit backend URL, set `frontend/.env.local`:
+```
+NEXT_PUBLIC_API_URL=http://localhost:5000
+```
 
 ---
 
@@ -369,7 +417,7 @@ Probos/
 ## Future Scope
 
 ### 1. Machine Learning-Based Anomaly Detection
-- **Current**: Rule-based statistical thresholds
+- **Current**: Confidence-based diagnostic engine (temporal + cross-sensor + physical checks)
 - **Future**: Train ML models on historical sensor data to detect subtle drift patterns
 - **Benefit**: Catch complex failures that simple variance/spike checks miss
 
