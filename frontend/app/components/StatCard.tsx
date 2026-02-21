@@ -68,7 +68,7 @@ export default function StatCard({
             className={`glass-strong p-6 rounded-2xl border ${colors.border} hover:${colors.glow} hover:shadow-2xl transition-all duration-300 relative overflow-hidden group`}
         >
             {/* Background gradient overlay */}
-            <div className={`absolute inset-0 bg-gradient-to-br ${colors.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-300`}></div>
+            <div className={`absolute inset-0 bg-linear-to-br ${colors.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-300`}></div>
 
             {/* Animated border glow */}
             <div className={`absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${colors.shadow}`}></div>
@@ -78,7 +78,7 @@ export default function StatCard({
                     <div>
                         <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">{title}</p>
                     </div>
-                    <div className={`p-3 rounded-xl bg-gradient-to-br ${colors.icon} shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                    <div className={`p-3 rounded-xl bg-linear-to-br ${colors.icon} shadow-lg group-hover:scale-110 transition-transform duration-300`}>
                         <div className="text-white w-6 h-6">
                             {icon}
                         </div>
@@ -117,7 +117,7 @@ export default function StatCard({
             </div>
 
             {/* Subtle animated background pattern */}
-            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-white/5 to-transparent rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+            <div className="absolute top-0 right-0 w-32 h-32 bg-linear-to-br from-white/5 to-transparent rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
         </motion.div>
     );
 }

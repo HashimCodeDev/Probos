@@ -41,9 +41,8 @@ export default function ResolveButton({ ticketId, status, onResolve }: ResolveBu
             whileTap={{ scale: 0.95 }}
             onClick={handleResolve}
             disabled={isResolving}
-            className={`inline-flex items-center px-4 py-2 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white rounded-xl text-xs font-bold uppercase tracking-wide shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
-                isResolving ? 'animate-pulse' : ''
-            }`}
+            className={`inline-flex items-center px-4 py-2 bg-linear-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white rounded-xl text-xs font-bold uppercase tracking-wide shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${isResolving ? 'animate-pulse' : ''
+                }`}
         >
             {isResolving ? (
                 <>
