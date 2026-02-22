@@ -1,4 +1,4 @@
-# Probos
+# STVE - Sensor Trust Verification Engine
 
 **Sensor Trust Verification Engine for Precision Agriculture**
 
